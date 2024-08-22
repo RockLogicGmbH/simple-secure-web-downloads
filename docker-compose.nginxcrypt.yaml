@@ -1,0 +1,34 @@
+services:
+  nginx:
+    depends_on:
+      - proxy
+    container_name: nginx
+    image: nginx:latest
+    restart: unless-stopped
+    volumes:
+      - ./html:/etc/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./htpasswd:/etc/nginx/.htpasswd:ro
+
+  proxy:
+    container_name: proxy
+    image: rocklogicgmbh/nginxcrypt:latest
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    # tty: true # only needed for zerossl if NXCT_SERVICE_EMAIL is given (currently disabled anyway!)
+    volumes:
+      - ./.volumes/proxy/certs:/certs
+      - ./.volumes/proxy/conf:/conf
+    environment:
+      - NXCT_SERVICE_KEYLENGTH=ec-384
+      # - NXCT_SERVICE_EMAIL=your@email.tld
+      - NXCT_SERVICE_DHPARAM=2048
+      - NXCT_SERVICE_DRYRUN=false
+      - NXCT_SERVICE_DELTEOUTDATEDCERTS=true
+      - NXCT_SERVICE_CERTDIRPERMS=600
+      - NXCT_SERVICE_HOST_1=127.0.0.1
+      - NXCT_SERVICE_PROXY_1=nginx:80
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # required on Linux!
